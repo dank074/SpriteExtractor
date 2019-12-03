@@ -7,6 +7,7 @@ import javax.xml.bind.JAXBException;
 import javax.xml.bind.Unmarshaller;
 import javax.xml.transform.stream.StreamSource;
 import java.io.IOException;
+import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 
@@ -25,9 +26,13 @@ public class EffectmapParser {
 
     public static Effectmap getEffectmap(URL sourceURL) {
         try {
+            System.out.println(sourceURL);
             JAXBContext jc = JAXBContext.newInstance(Effectmap.class);
             Unmarshaller unmarshaller = jc.createUnmarshaller();
-            StreamSource src = new StreamSource(sourceURL.openStream());
+            HttpURLConnection conn = (HttpURLConnection) sourceURL.openConnection();
+            conn.setRequestMethod("GET");
+            conn.setRequestProperty("User-Agent", "Mozilla/5.0");
+            StreamSource src = new StreamSource(conn.getInputStream());
             return ((Effectmap) unmarshaller.unmarshal(src));
         } catch (JAXBException jaxbEx) {
             Log.error("Failed to create new JAXB instance", jaxbEx);

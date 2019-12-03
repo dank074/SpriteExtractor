@@ -4,9 +4,15 @@ import com.jpexs.decompiler.flash.SWF;
 import com.jpexs.decompiler.flash.tags.Tag;
 import com.jpexs.decompiler.flash.tags.base.ImageTag;
 
+import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -18,12 +24,16 @@ import java.util.stream.Collectors;
 public class SWFData {
     private SWF swf;
 
-    public SWFData(String fileLoc) throws IOException, InterruptedException {
-        swf = new SWF(new FileInputStream(fileLoc), false, false);
+    public SWFData(File file) throws IOException, InterruptedException {
+        swf = new SWF(new FileInputStream(file), false, false);
     }
 
+
     public SWFData(URL fileLoc) throws IOException, InterruptedException {
-        swf = new SWF(fileLoc.openStream(), false, false);
+        HttpURLConnection conn = (HttpURLConnection) fileLoc.openConnection();
+        conn.setRequestMethod("GET");
+        conn.setRequestProperty("User-Agent", "Mozilla/5.0");
+        swf = new SWF(conn.getInputStream(), false, false);
     }
 
     public List<Tag> getTags() {
@@ -35,5 +45,9 @@ public class SWFData {
                 .filter((tag) -> tag.getTagName().equals("DefineBitsLossless2"))
                 .map((tag) -> swf.getImage(Integer.parseInt(tag.toString().split("\\(")[1].split(":")[0])))
                 .collect(Collectors.toList());
+    }
+
+    public SWF getswf() {
+        return this.swf;
     }
 }

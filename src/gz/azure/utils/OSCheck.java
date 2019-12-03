@@ -1,6 +1,8 @@
 // git's being weird...
 package gz.azure.utils;
 
+import java.io.File;
+import java.io.FilenameFilter;
 import java.util.Locale;
 
 public final class OSCheck {
@@ -31,4 +33,9 @@ public final class OSCheck {
         }
         return detectedOS;
     }
+
+    public static FilenameFilter getSwfFilter() {
+        return (File dir, String name) -> name.toLowerCase().endsWith(".swf");
+    }
+
 }

@@ -7,6 +7,7 @@ import javax.xml.bind.JAXBException;
 import javax.xml.bind.Unmarshaller;
 import javax.xml.transform.stream.StreamSource;
 import java.io.IOException;
+import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 
@@ -16,9 +17,9 @@ import java.net.URL;
  */
 public class FurnidataParser {
 
-    public static Furnidata getFurnidata() {
+    public static Furnidata getFurnidata(String url) {
         try {
-            return getFurnidata(new URL("https://www.habbo.com/gamedata/furnidata_xml/1"));
+            return getFurnidata(new URL(url));
         } catch (MalformedURLException e) {
             // This is a static URL. It should never be "malformed"
             return null;
@@ -29,7 +30,10 @@ public class FurnidataParser {
         try {
             JAXBContext jc = JAXBContext.newInstance(Furnidata.class);
             Unmarshaller unmarshaller = jc.createUnmarshaller();
-            StreamSource src = new StreamSource(sourceURL.openStream());
+            HttpURLConnection conn = (HttpURLConnection) sourceURL.openConnection();
+            conn.setRequestMethod("GET");
+            conn.setRequestProperty("User-Agent", "Mozilla/5.0");
+            StreamSource src = new StreamSource(conn.getInputStream());
             return ((Furnidata) unmarshaller.unmarshal(src));
         } catch (JAXBException jaxbEx) {
             Log.error("Failed to create new JAXB instance", jaxbEx);
