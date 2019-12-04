@@ -42,11 +42,11 @@ public class ExternalVariables {
     }
 
     public String getFlashClientURL() {
-        return variables.get("flash.client.url");
+        return variables.get("flash.client.url").startsWith("//") ? "http:" + variables.get("flash.client.url") : variables.get("flash.client.url");
     }
 
     public String getFlashDynamicDownloadURL() {
-        return variables.get("flash.dynamic.download.url");
+        return variables.get("flash.dynamic.download.url").startsWith("//") ? "http:" + variables.get("flash.dynamic.download.url") : variables.get("flash.dynamic.download.url");
     }
 
     public String getFigureData() {return variables.get("external.figurepartlist.txt"); }
