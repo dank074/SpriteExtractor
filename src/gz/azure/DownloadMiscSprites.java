@@ -1,5 +1,6 @@
 package gz.azure;
 
+import com.jpexs.decompiler.flash.tags.Tag;
 import com.jpexs.decompiler.flash.tags.base.ImageTag;
 import gz.azure.utils.Log;
 import gz.azure.utils.OSCheck;
@@ -11,7 +12,6 @@ import java.io.FileOutputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.stream.Collectors;
@@ -34,65 +34,68 @@ public class DownloadMiscSprites implements Runnable {
         this.Itemtype = type;
     }
 
-    public DownloadMiscSprites(File file, Boolean stripClass) {
+    public DownloadMiscSprites(File file, Boolean stripClass, String type) {
         this.file = file;
         this.stripClass = stripClass;
+        this.Itemtype = type;
         this.className = this.file.getName().replace(".swf", "");
     }
 
     @Override
     public void run() {
         String path;
-        String swfpath;
+        String savePath;
+        String manifestPath;
         if (OSCheck.getOperatingSystemType() == OSCheck.OSType.Windows) {
-            path = "camera\\gordon\\";
-            swfpath = "swf\\" + Itemtype + "\\";
-        }
-        else {
+            path = "output\\" + Itemtype + "\\sprites\\";
+            savePath = "output\\swf\\" + Itemtype + "\\";
+            manifestPath = "output\\" + Itemtype + "\\manifest\\";
+        } else {
             //path = imageType + "/" + Itemtype + "/";
-            path = "camera/gordon/";
-            swfpath = "swf/" + Itemtype + "/";
+            path = "output/" + Itemtype + "/sprites/";
+            savePath = "output/swf/" + Itemtype + "/";
+            manifestPath = "output/" + Itemtype + "/manifest/";
         }
 
         try {
-            if (!Files.isDirectory(Paths.get(path))) Files.createDirectory(Paths.get(path));
-            //if (!Files.isDirectory(Paths.get(swfpath))) Files.createDirectory(Paths.get(swfpath));
-        } catch(java.io.IOException e) {
+            if (!Files.isDirectory(Paths.get(path))) Files.createDirectories(Paths.get(path));
+            if (!Files.isDirectory(Paths.get(manifestPath))) Files.createDirectories(Paths.get(manifestPath));
+            if (SpriteExtractor.saveDownloads && !Files.isDirectory(Paths.get(savePath))) Files.createDirectories(Paths.get(savePath));
+        } catch (java.io.IOException e) {
             Log.error("Unable to create output directory");
+            Log.error(e.getMessage());
+            System.exit(1);
         }
 
         try {
-            if(!SpriteExtractor.isLocal) {
+            SWFData swfData;
+            if (!SpriteExtractor.isLocal) {
                 URL swfURL = new URL(SpriteExtractor.externalVariables.getFlashClientURL() + className + ".swf");
                 Log.info("Extracting: " + swfURL.toString());
 
-                SWFData swfData = new SWFData(swfURL);
-
-                for (ImageTag tag : swfData.getImageTags()) {
-                    String spriteName;
-                    if (stripClass) {
-                        spriteName = tag.getClassName().replace(className + "_", "");
-                    } else {
-                        spriteName = Arrays.stream(tag.getClassName().split(className + "_"))
-                                .distinct().collect(Collectors.joining(className + "_"));
-                    }
-                    ImageIO.write(tag.getImage().getBufferedImage(), "png", new File(path + spriteName + ".png"));
-                }
-                //swfData.getswf().saveTo(new FileOutputStream(swfpath + className + ".swf"));
-            }
-            else {
+                swfData = new SWFData(swfURL);
+            } else {
                 Log.info("Extracting: " + file.getName());
-                SWFData swfData = new SWFData(file);
+                swfData = new SWFData(file);
+            }
+            for (ImageTag tag : swfData.getImageTags()) {
+                String spriteName;
+                if (stripClass) {
+                    spriteName = tag.getClassName().replace(className + "_", "");
+                } else {
+                    spriteName = Arrays.stream(tag.getClassName().split(className + "_"))
+                            .distinct().collect(Collectors.joining(className + "_"));
+                }
+                ImageIO.write(tag.getImage().getBufferedImage(), "png", new File(path + spriteName + ".png"));
+            }
+            if(SpriteExtractor.saveDownloads)
+                swfData.getswf().saveTo(new FileOutputStream(savePath + className + ".swf")); // saving the downloaded swf
 
-                for (ImageTag tag : swfData.getImageTags()) {
-                    String spriteName;
-                    if (stripClass) {
-                        spriteName = tag.getClassName().replace(className + "_", "");
-                        ImageIO.write(tag.getImage().getBufferedImage(), "png", new File(path + spriteName + ".png"));
-                    }
-                        spriteName = Arrays.stream(tag.getClassName().split(className + "_"))
-                                .distinct().collect(Collectors.joining(className + "_"));
-                    ImageIO.write(tag.getImage().getBufferedImage(), "png", new File(path + spriteName + ".png"));
+            for (Tag tag : swfData.getManifestBinaryDataTags()) {
+                String spriteName = tag.toString().split("\\(")[1].split(":")[1].split("\\)")[0].trim();
+                try (FileOutputStream stream = new FileOutputStream(manifestPath + spriteName + ".bin")) {
+                    byte[] data = tag.getData();
+                    stream.write(data);
                 }
             }
         } catch (MalformedURLException ex) {

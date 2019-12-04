@@ -34,46 +34,41 @@ public class DownloadFurniSprites implements Runnable {
     @Override
     public void run() {
         String path;
-        String swfpath;
+        String savePath;
         if (OSCheck.getOperatingSystemType() == OSCheck.OSType.Windows) {
-            path = "camera\\furnis\\";
-            swfpath = "swf\\furnis\\";
+            path = "output\\furnis\\sprites\\";
+            savePath = "output\\swf\\furnis\\";
         } else {
-            path = "camera/furnis";
-            swfpath = "swf/furnis";
+            path = "output/furnis/sprites/";
+            savePath = "output/swf/furnis/";
         }
 
         try {
-            if (!Files.isDirectory(Paths.get(path))) Files.createDirectory(Paths.get(path));
-            //if (!Files.isDirectory(Paths.get(swfpath))) Files.createDirectory(Paths.get(swfpath));
-        } catch(java.io.IOException e){
+            if (!Files.isDirectory(Paths.get(path))) Files.createDirectories(Paths.get(path));
+            if (SpriteExtractor.saveDownloads && !Files.isDirectory(Paths.get(savePath))) Files.createDirectories(Paths.get(savePath));
+        } catch (java.io.IOException e) {
             Log.error("Unable to create directory for output");
+            Log.error(e.getMessage());
+            System.exit(1);
         }
 
         try {
-            if(!SpriteExtractor.isLocal) {
+            SWFData swfData;
+            if (!SpriteExtractor.isLocal) {
                 URL swfURL = new URL(SpriteExtractor.externalVariables.getFlashDynamicDownloadURL() + className + ".swf");
                 Log.info("Extracting: " + swfURL.toString());
-
-                SWFData swfData = new SWFData(swfURL);
-
-                for (ImageTag tag : swfData.getImageTags()) {
-                    String spriteName = Arrays.stream(tag.getClassName().split(className + "_"))
-                            .distinct().collect(Collectors.joining(className + "_"));
-                    ImageIO.write(tag.getImage().getBufferedImage(), "png", new File(path + spriteName + ".png"));
-                }
-                //swfData.getswf().saveTo(new FileOutputStream(swfpath + className + ".swf"));
-            }
-            else {
+                swfData = new SWFData(swfURL);
+            } else {
                 Log.info("Extracting: " + file.getName());
-                SWFData swfData = new SWFData(file);
-
-                for (ImageTag tag : swfData.getImageTags()) {
-                    String spriteName = Arrays.stream(tag.getClassName().split(className + "_"))
-                            .distinct().collect(Collectors.joining(className + "_"));
-                    ImageIO.write(tag.getImage().getBufferedImage(), "png", new File(path + spriteName + ".png"));
-                }
+                swfData = new SWFData(file);
             }
+            for (ImageTag tag : swfData.getImageTags()) {
+                String spriteName = Arrays.stream(tag.getClassName().split(className + "_"))
+                        .distinct().collect(Collectors.joining(className + "_"));
+                ImageIO.write(tag.getImage().getBufferedImage(), "png", new File(path + spriteName + ".png"));
+            }
+            if(SpriteExtractor.saveDownloads)
+                swfData.getswf().saveTo(new FileOutputStream(savePath + className + ".swf"));
         } catch (MalformedURLException ex) {
             Log.error("Malformed URL!", ex);
         } catch (Throwable ex) {

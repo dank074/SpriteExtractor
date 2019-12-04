@@ -3,6 +3,7 @@ package gz.azure.utils;
 import com.jpexs.decompiler.flash.SWF;
 import com.jpexs.decompiler.flash.tags.Tag;
 import com.jpexs.decompiler.flash.tags.base.ImageTag;
+import com.jpexs.decompiler.flash.tags.DefineBinaryDataTag;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -44,6 +45,12 @@ public class SWFData {
         return swf.tags.stream()
                 .filter((tag) -> tag.getTagName().equals("DefineBitsLossless2"))
                 .map((tag) -> swf.getImage(Integer.parseInt(tag.toString().split("\\(")[1].split(":")[0])))
+                .collect(Collectors.toList());
+    }
+
+    public List<Tag> getManifestBinaryDataTags() {
+        return swf.tags.stream()
+                .filter((tag) -> tag.getTagName().equals("DefineBinaryData") && tag.getName().contains("manifest"))
                 .collect(Collectors.toList());
     }
 
