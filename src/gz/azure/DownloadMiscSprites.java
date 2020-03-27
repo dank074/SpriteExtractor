@@ -94,7 +94,7 @@ public class DownloadMiscSprites implements Runnable {
             for (Tag tag : swfData.getManifestBinaryDataTags()) {
                 String spriteName = tag.toString().split("\\(")[1].split(":")[1].split("\\)")[0].trim();
                 try (FileOutputStream stream = new FileOutputStream(manifestPath + spriteName + ".bin")) {
-                    byte[] data = tag.getData();
+                    byte[] data = Arrays.copyOfRange(tag.getData(), 6, tag.getData().length);
                     stream.write(data);
                 }
             }
